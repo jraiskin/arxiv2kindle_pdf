@@ -15,7 +15,9 @@ def yn_to_bool(yn):
 
 
 def get_args():
-    parser = argparse.ArgumentParser(description="")
+    parser = argparse.ArgumentParser(description="""Download and compile a 
+    kidle-compatible version of PDF to a specified directory.
+    Usage example: arxiv2kindle_pdf -i=https://arxiv.org/abs/1508.06576 -d=~/Documents/arxiv_pdfs/""")
 
     parser.add_argument(
         '-i', '--article_id', dest='article_id',
