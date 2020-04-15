@@ -106,14 +106,25 @@ def main():
 
     texfiles = glob.glob(os.path.join(d, '*.tex'))
     for texfile in texfiles:
-        with open(texfile, 'r') as f:
+        with open(texfile, 'r', encoding=encoding) as f:
             src = f.readlines()
         if 'documentclass' in src[0]:
             print('correct file: ' + texfile)
             break
 
-    # filter comments/newlines for easier debugging:
-    src = [line for line in src if line[0] != '%' and len(line.strip()) > 0]
+    def line_filter_gen(lines):
+        geom_package_pat = re.compile(r'\\usepackage(\[.*\])?\{geometry\}')
+        for line in lines:
+            # remove geometry line, comments, newlines
+            if (
+                    re.match(geom_package_pat, line) or
+                    line[0] == '%' or
+                    len(line.strip()) == 0
+            ):
+                continue
+            yield line
+
+    src = list(line_filter_gen(src))
 
     # strip font size, column stuff, and paper size stuff in documentclass line:
     src[0] = re.sub(r'\b\d+pt\b', '', src[0])
@@ -142,6 +153,10 @@ def main():
                             r'\\includegraphics[width={mul}\\textwidth,height={mul}\\textheight,keepaspectratio]'.format(
                                 mul=mul),
                             line)
+
+    os.rename(texfile, texfile + '.bak')
+    with open(texfile, 'w') as f:
+        f.writelines(src)
 
     textout = os.popen(
         " && ".join([f"pdflatex --interaction=nonstopmode {texfile}"] * 3)
