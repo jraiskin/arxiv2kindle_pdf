@@ -17,7 +17,11 @@ def yn_to_bool(yn):
 def get_args():
     parser = argparse.ArgumentParser(description="""Download and compile a 
     kidle-compatible version of PDF to a specified directory.
-    Usage example: arxiv2kindle_pdf -i=https://arxiv.org/abs/1508.06576 -d=~/Documents/arxiv_pdfs/""")
+    Usage example: arxiv2kindle_pdf -i=https://arxiv.org/abs/1508.06576 -d=~/Documents/arxiv_pdfs/
+    """ + "Debugging note: if fails with 'cp: cannot stat '/tmp/$RANDOM/arxiv.pdf': No such file or directory' "
+          "and a few lines before that it says 'correct file: /tmp/$RANDOM/arxiv.tex', "
+          "check /tmp/$RANDOM/arxiv.log for errors."
+          "This often happens when dependencies are missing in the pdf build step")
 
     parser.add_argument(
         '-i', '--article_id', dest='article_id',
@@ -30,6 +34,12 @@ def get_args():
              "Default value is y. e.g. --landscape=y",
         default='y',
         choices=['y', 'n']
+    )
+    parser.add_argument(
+        '-e', '--encoding', dest='encoding',
+        help="Select the string encoding scheme. "
+             "Default value is utf8, e.g. --encoding=windows-1255",
+        default='utf8',
     )
     parser.add_argument(
         '-d', '--output_dir', dest='output_dir',
@@ -61,6 +71,7 @@ def main():
     landscape = args.landscape
     output_dir = args.output_dir
     open_pdf = args.open_pdf
+    encoding = args.encoding
 
     # paper settings (decrease width/height to increase font)
     width = "6in"
@@ -78,7 +89,8 @@ def main():
     ).group('id')
     arxiv_abs = 'http://arxiv.org/abs/' + arxiv_id
     # arxiv_pdf = 'http://arxiv.org/pdf/' + arxiv_id
-    arxiv_pgtitle = html.fromstring(requests.get(arxiv_abs).text.encode('utf8')).xpath('/html/head/title/text()')[0]
+    arxiv_pgtitle = \
+        html.fromstring(requests.get(arxiv_abs).text.encode(encoding=encoding)).xpath('/html/head/title/text()')[0]
     arxiv_title = re.sub(r'\s+', ' ', re.sub(r'^\[[^]]+\]\s*', '', arxiv_pgtitle), re.DOTALL)
     arxiv_title_scrubbed = re.sub('[^-_A-Za-z0-9]+', '_', arxiv_title, re.DOTALL)
     print(f'Detected article: {arxiv_title_scrubbed}.\n'
